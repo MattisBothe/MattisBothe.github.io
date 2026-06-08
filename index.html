@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wetter · Bremerhaven</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Space+Mono:ital@0;1&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--sky:#060d1a;--accent:#4fc3f7;--accent2:#b39ddb;--text:#e8f4fd;--muted:#7a9ab5}
+body{background:var(--sky);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;overflow-x:hidden;position:relative}
+#stars{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0}
+.star{position:absolute;background:#fff;border-radius:50%;animation:twinkle var(--d,3s) ease-in-out infinite var(--dl,0s)}
+@keyframes twinkle{0%,100%{opacity:var(--mo,.8)}50%{opacity:.1}}
+canvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1}
+.page{position:relative;z-index:2;max-width:660px;margin:0 auto;padding:2.5rem 1.5rem 4rem}
+.city{font-size:clamp(2.2rem,8vw,4rem);font-weight:800;letter-spacing:-.03em;line-height:1}
+.date{font-family:'Space Mono',monospace;font-size:.72rem;color:var(--muted);font-style:italic;margin-top:.4rem}
+.hero{display:flex;align-items:flex-end;gap:2rem;margin:2.5rem 0 3rem;flex-wrap:wrap}
+.temp-big{font-size:clamp(5rem,18vw,9rem);font-weight:800;line-height:1;letter-spacing:-.05em;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.temp-unit{font-size:2rem;color:var(--accent);font-weight:700;margin-bottom:1rem}
+.cond{font-size:1.3rem;font-weight:700;margin-bottom:.3rem}
+.sub{font-family:'Space Mono',monospace;font-size:.7rem;color:var(--muted);margin-top:.2rem}
+.tabs{display:flex;gap:.5rem;margin-bottom:2rem;background:rgba(255,255,255,.04);border-radius:12px;padding:4px}
+.tab{flex:1;padding:.5rem;border:none;background:transparent;color:var(--muted);font-family:'Syne',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;border-radius:9px;transition:all .25s;text-transform:uppercase;letter-spacing:.05em}
+.tab.active{background:rgba(79,195,247,.15);color:var(--accent)}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:.8rem;margin-bottom:2rem}
+.card{background:rgba(255,255,255,.04);border:1px solid rgba(79,195,247,.1);border-radius:16px;padding:1.2rem 1.4rem;transition:border-color .3s}
+.card:hover{border-color:rgba(79,195,247,.3)}
+.card-label{font-family:'Space Mono',monospace;font-size:.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.5rem}
+.card-value{font-size:1.6rem;font-weight:800}
+.card-sub{font-family:'Space Mono',monospace;font-size:.62rem;color:var(--muted);margin-top:.2rem}
+.section-label{font-family:'Space Mono',monospace;font-size:.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.8rem}
+.hourly{display:flex;gap:.6rem;overflow-x:auto;padding-bottom:.5rem;scrollbar-width:none}
+.hourly::-webkit-scrollbar{display:none}
+.hour{flex-shrink:0;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:.8rem .9rem;text-align:center;min-width:62px;cursor:pointer;transition:all .25s}
+.hour:hover,.hour.now{background:rgba(79,195,247,.12);border-color:rgba(79,195,247,.3)}
+.hour-time{font-family:'Space Mono',monospace;font-size:.58rem;color:var(--muted);margin-bottom:.4rem}
+.hour-icon{font-size:1.2rem;margin-bottom:.3rem}
+.hour-temp{font-size:.82rem;font-weight:700}
+.forecast{display:flex;flex-direction:column;gap:.5rem;margin-top:.5rem}
+.frow{display:flex;align-items:center;gap:1rem;padding:.7rem 1rem;background:rgba(255,255,255,.03);border-radius:12px;border:1px solid rgba(255,255,255,.05);transition:background .2s}
+.frow:hover{background:rgba(255,255,255,.07)}
+.fday{font-family:'Space Mono',monospace;font-size:.7rem;color:var(--muted);width:34px;flex-shrink:0}
+.ficon{font-size:1.15rem;flex-shrink:0}
+.fbar{flex:1;height:4px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden}
+.fbar-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--accent2),var(--accent))}
+.ftemps{font-family:'Space Mono',monospace;font-size:.7rem;flex-shrink:0}
+.flo{color:var(--muted);margin-left:.3rem}
+.moon-bar{display:flex;align-items:center;gap:1.2rem;margin-top:2rem;padding:1.2rem 1.4rem;background:rgba(179,157,219,.07);border:1px solid rgba(179,157,219,.15);border-radius:16px}
+.moon-icon{font-size:2rem}
+.ml{font-size:.9rem;font-weight:700;color:var(--accent2)}
+.ms{font-family:'Space Mono',monospace;font-size:.62rem;color:var(--muted);margin-top:.25rem}
+.footer{margin-top:3rem;font-family:'Space Mono',monospace;font-size:.58rem;color:rgba(122,154,181,.35);text-align:center;letter-spacing:.08em}
+.view{display:none}.view.active{display:block}
+</style>
+</head>
+<body>
+<div id="stars"></div>
+<canvas id="rc"></canvas>
+<div class="page">
+  <div class="city">Bremerhaven</div>
+  <div class="date" id="dateline">—</div>
+
+  <div class="hero">
+    <div class="temp-big">11</div>
+    <div class="temp-unit">°C</div>
+    <div>
+      <div class="cond">Bedeckt · Regen</div>
+      <div class="sub">Gefühlt 8°C</div>
+      <div class="sub">Wind 19 km/h NW</div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="sv('heute',this)">Heute</button>
+    <button class="tab" onclick="sv('woche',this)">7 Tage</button>
+    <button class="tab" onclick="sv('details',this)">Details</button>
+  </div>
+
+  <div class="view active" id="v-heute">
+    <div class="stats">
+      <div class="card"><div class="card-label">Luftfeuchtigkeit</div><div class="card-value">78%</div><div class="card-sub">hoch</div></div>
+      <div class="card"><div class="card-label">Sichtweite</div><div class="card-value">6 km</div><div class="card-sub">eingeschränkt</div></div>
+      <div class="card"><div class="card-label">UV-Index</div><div class="card-value">1</div><div class="card-sub">sehr niedrig</div></div>
+      <div class="card"><div class="card-label">Luftdruck</div><div class="card-value">1008</div><div class="card-sub">hPa, fallend</div></div>
+    </div>
+    <div class="section-label">Stündlich</div>
+    <div class="hourly" id="hourly"></div>
+    <div class="moon-bar">
+      <div class="moon-icon">🌒</div>
+      <div><div class="ml">Zunehmende Sichel</div><div class="ms">Vollmond in 9 Tagen · Aufgang 14:22</div></div>
+    </div>
+  </div>
+
+  <div class="view" id="v-woche">
+    <div class="section-label">7-Tage-Vorhersage</div>
+    <div class="forecast" id="forecast"></div>
+  </div>
+
+  <div class="view" id="v-details">
+    <div class="stats">
+      <div class="card"><div class="card-label">Taupunkt</div><div class="card-value">7°C</div><div class="card-sub">feucht</div></div>
+      <div class="card"><div class="card-label">Sonnenstunden</div><div class="card-value">1.2 h</div><div class="card-sub">heute</div></div>
+      <div class="card"><div class="card-label">Niederschlag</div><div class="card-value">4.8 mm</div><div class="card-sub">heute</div></div>
+      <div class="card"><div class="card-label">Böen</div><div class="card-value">34 km/h</div><div class="card-sub">max</div></div>
+      <div class="card"><div class="card-label">Sonnenaufgang</div><div class="card-value">05:14</div><div class="card-sub">Uhr</div></div>
+      <div class="card"><div class="card-label">Sonnenuntergang</div><div class="card-value">21:38</div><div class="card-sub">Uhr</div></div>
+    </div>
+  </div>
+
+  <div class="footer">Fiktive Wetterdaten · Nur zur Demonstration</div>
+</div>
+
+<script>
+// Stars
+const se=document.getElementById('stars');
+for(let i=0;i<110;i++){const s=document.createElement('div');s.className='star';const z=Math.random()*2+.5;s.style.cssText=`width:${z}px;height:${z}px;top:${Math.random()*100}%;left:${Math.random()*100}%;--d:${2+Math.random()*4}s;--dl:${Math.random()*4}s;--mo:${.3+Math.random()*.7}`;se.appendChild(s)}
+
+// Date
+const D=new Date(),days=['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'],months=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+document.getElementById('dateline').textContent=`${days[D.getDay()]}, ${D.getDate()}. ${months[D.getMonth()]} ${D.getFullYear()}`;
+
+// Hourly
+const hicons=['⛅','🌧','🌧','⛅','☁️','🌦','☁️','🌧','🌧','⛅','☁️','🌦'],htemps=[9,9,10,11,11,12,11,10,10,9,9,8];
+const hs=document.getElementById('hourly'),h=D.getHours();
+for(let i=0;i<12;i++){const d=document.createElement('div');d.className='hour'+(i===0?' now':'');d.innerHTML=`<div class="hour-time">${String((h+i)%24).padStart(2,'0')}:00</div><div class="hour-icon">${hicons[i]}</div><div class="hour-temp">${htemps[i]}°</div>`;hs.appendChild(d)}
+
+// Forecast
+const fdays=['Mo','Di','Mi','Do','Fr','Sa','So'],fdata=[{icon:'🌧',hi:11,lo:7,p:80},{icon:'🌦',hi:13,lo:8,p:55},{icon:'⛅',hi:15,lo:9,p:20},{icon:'☀️',hi:18,lo:10,p:5},{icon:'⛅',hi:16,lo:9,p:25},{icon:'🌧',hi:12,lo:7,p:75},{icon:'🌦',hi:14,lo:8,p:40}];
+const fl=document.getElementById('forecast');
+fdata.forEach((f,i)=>{const d=new Date(D);d.setDate(d.getDate()+i+1);const r=document.createElement('div');r.className='frow';r.innerHTML=`<div class="fday">${fdays[d.getDay()]}</div><div class="ficon">${f.icon}</div><div class="fbar"><div class="fbar-fill" style="width:${f.p}%"></div></div><div class="ftemps">${f.hi}°<span class="flo">${f.lo}°</span></div>`;fl.appendChild(r)});
+
+// Rain
+const cv=document.getElementById('rc'),cx=cv.getContext('2d');
+function rs(){cv.width=window.innerWidth;cv.height=window.innerHeight}rs();window.addEventListener('resize',rs);
+const drops=Array.from({length:160},()=>({x:Math.random()*window.innerWidth,y:Math.random()*window.innerHeight,l:Math.random()*18+8,s:Math.random()*3+1.5,o:Math.random()*.4+.1}));
+(function rain(){cx.clearRect(0,0,cv.width,cv.height);drops.forEach(d=>{cx.beginPath();cx.moveTo(d.x,d.y);cx.lineTo(d.x-d.l*.2,d.y+d.l);cx.strokeStyle=`rgba(79,195,247,${d.o})`;cx.lineWidth=.7;cx.stroke();d.y+=d.s*2;d.x-=d.s*.4;if(d.y>cv.height){d.y=-20;d.x=Math.random()*cv.width}});requestAnimationFrame(rain)})();
+
+// Tabs
+function sv(v,btn){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));document.getElementById('v-'+v).classList.add('active');document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active')}
+</script>
+</body>
+</html>
